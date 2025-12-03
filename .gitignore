@@ -1,0 +1,8 @@
+/vendor/
+/writable/cache/
+/writable/logs/
+/writable/session/
+/writable/uploads/
+/.env
+.DS_Store
+Thumbs.db
