@@ -187,12 +187,13 @@ class Usuarios extends BaseController
             return redirect()->back()->with('error', 'Vendedor de destino inválido.');
         }
 
-        // Reatribui todos os spots
-        $spotModel = new SpotModel();
-        $total = $spotModel
-            ->where('vendedor_id', $vendedorId)
-            ->set('vendedor_id', $novoVendedorId)
-            ->update();
+        // Reatribui todos os spots usando Query Builder para obter número de linhas afetadas
+        $db = \Config\Database::connect();
+        $builder = $db->table('spots');
+        $builder->where('vendedor_id', $vendedorId);
+        $builder->set('vendedor_id', $novoVendedorId);
+        $builder->update();
+        $total = $db->affectedRows();
 
         return redirect()->back()->with('message', "{$total} spot(s) reatribuído(s) com sucesso para {$novoVendedor['nome']}.");
     }
