@@ -239,13 +239,22 @@ class Usuarios extends BaseController
             $builder = $db->table('spots');
             $builder->where('vendedor_id', $vendedorId);
             $builder->set('vendedor_id', $novoVendedorId);
-            $builder->update();
+            $result = $builder->update();
+            
+            // Obtém o número de linhas afetadas ANTES de completar a transação
+            // affectedRows() retorna o número de linhas afetadas pela última query
             $total = $db->affectedRows();
             
             $db->transComplete();
             
             if ($db->transStatus() === false) {
                 log_message('error', "Falha na reatribuição de spots. Executado por: User ID {$currentUserId} ({$currentUserEmail}), vendedor ID {$vendedorId} para {$novoVendedorId}");
+                return redirect()->back()->with('error', 'Erro ao reatribuir spots. Tente novamente.');
+            }
+            
+            // Verifica se a operação foi bem-sucedida
+            if ($result === false) {
+                log_message('error', "Falha na reatribuição de spots (resultado false). Executado por: User ID {$currentUserId} ({$currentUserEmail}), vendedor ID {$vendedorId} para {$novoVendedorId}");
                 return redirect()->back()->with('error', 'Erro ao reatribuir spots. Tente novamente.');
             }
             

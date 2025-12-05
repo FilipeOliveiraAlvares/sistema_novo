@@ -651,7 +651,7 @@
                 <?= $pager->links('default', 'default_full'); ?>
             </div>
         <?php endif; ?>
-    <?php elseif ($q !== '' || $ramo !== '' || $cidade_id !== ''): ?>
+    <?php elseif ($q !== '' || $ramo_id !== '' || $cidade_id !== ''): ?>
         <div class="no-results">
             <div class="no-results-icon">🔍</div>
             <h2 style="margin: 0 0 8px;">Nenhum resultado encontrado</h2>
