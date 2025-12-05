@@ -7,59 +7,18 @@ use App\Models\SpotModel;
 use App\Models\UserModel;
 use App\Models\CidadeModel;
 use App\Models\RamoModel;
+use App\Traits\AuthTrait;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 
 class Spots extends BaseController
 {
+    use AuthTrait;
+
     protected SpotModel $spotModel;
 
     public function __construct()
     {
         $this->spotModel = new SpotModel();
-    }
-
-    /**
-     * Retorna dados básicos do usuário logado a partir da sessão.
-     */
-    protected function getCurrentUser(): ?array
-    {
-        $session = session();
-
-        if (! $session->get('user_id')) {
-            return null;
-        }
-
-        return [
-            'id'     => (int) $session->get('user_id'),
-            'nome'   => (string) $session->get('user_nome'),
-            'email'  => (string) $session->get('user_email'),
-            'perfil' => (string) $session->get('user_perfil'),
-        ];
-    }
-
-    /**
-     * Verifica se o usuário logado pode acessar o spot informado.
-     * Regra:
-     * - admin: pode tudo
-     * - vendedor: apenas spots onde vendedor_id = seu id
-     */
-    protected function canAccessSpot(array $spot): bool
-    {
-        $user = $this->getCurrentUser();
-
-        if (! $user) {
-            return false;
-        }
-
-        if ($user['perfil'] === 'admin') {
-            return true;
-        }
-
-        if ($user['perfil'] === 'vendedor' && (int) ($spot['vendedor_id'] ?? 0) === $user['id']) {
-            return true;
-        }
-
-        return false;
     }
 
     public function index()
@@ -205,7 +164,7 @@ class Spots extends BaseController
 
         $this->spotModel->delete($id);
 
-        return redirect()->to('/admin/spots')->with('message', 'Spot removido com sucesso.');
+        return redirect()->to(site_url('admin/spots'))->with('message', 'Spot removido com sucesso.');
     }
 
     /**
@@ -219,16 +178,38 @@ class Spots extends BaseController
 
         $post = $this->request->getPost();
 
+        // Validação básica de campos obrigatórios
+        if (empty($post['nome'])) {
+            return redirect()->back()->withInput()->with('errors', ['O campo Nome é obrigatório.']);
+        }
+
         $cidadesRaw   = $post['cidades_atendidas'] ?? '';
         $cidades      = $this->parseCidades($cidadesRaw);
 
         $slug = $post['slug'] ?: url_title($post['nome'], '-', true);
+        
+        // Validação de slug
+        if (empty($slug) || strlen($slug) < 3) {
+            return redirect()->back()->withInput()->with('errors', ['O slug gerado é inválido. Verifique o nome do spot.']);
+        }
 
         // Tratamento do upload de logo
         $logoPath = $post['logo_atual'] ?? null;
         $logoFile = $this->request->getFile('logo');
 
         if ($logoFile && $logoFile->isValid() && ! $logoFile->hasMoved()) {
+            // Valida tipo de arquivo
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            $mimeType = $logoFile->getMimeType();
+            if (! in_array($mimeType, $allowedTypes, true)) {
+                return redirect()->back()->withInput()->with('errors', ['Tipo de arquivo inválido. Use apenas imagens (JPG, PNG, GIF ou WEBP).']);
+            }
+
+            // Valida tamanho (máximo 5MB)
+            if ($logoFile->getSize() > 5 * 1024 * 1024) {
+                return redirect()->back()->withInput()->with('errors', ['Arquivo muito grande. O tamanho máximo é 5MB.']);
+            }
+
             // Salva o logo dentro da pasta public/uploads/logos
             $uploadDir = FCPATH . 'uploads/logos';
 
@@ -253,7 +234,8 @@ class Spots extends BaseController
             'vigencia_contrato'         => $post['vigencia_contrato'] ?? null,
             'slug'                      => $slug,
             'categoria'                 => $post['categoria'] ?? null,
-            'ramo'                      => $post['ramo'] ?? null,
+            'ramo'                      => $post['ramo'] ?? null, // mantém para compatibilidade
+            'ramo_id'                   => $post['ramo_id'] !== '' ? (int) $post['ramo_id'] : null,
             'cidade_id'                 => $post['cidade_id'] !== '' ? (int) $post['cidade_id'] : null,
             'servico_principal'         => $post['servico_principal'] ?? null,
             'descricao'                 => $post['descricao'] ?? null,

@@ -242,6 +242,20 @@ class Spot extends BaseController
 
         $cidadePrincipal = $cidades[0] ?? null;
 
+        // Carrega dados da cidade e ramo se existirem
+        $cidadeModel = new CidadeModel();
+        $ramoModel = new RamoModel();
+        $cidadeSpot = null;
+        $ramoSpot = null;
+
+        if (! empty($spot['cidade_id'])) {
+            $cidadeSpot = $cidadeModel->find($spot['cidade_id']);
+        }
+
+        if (! empty($spot['ramo_id'])) {
+            $ramoSpot = $ramoModel->find($spot['ramo_id']);
+        }
+
         $nomeBase  = $spot['nome_fantasia'] ?: $spot['nome'];
         $cidadeSeo = $spot['cidade_sede'] ?: ($cidadePrincipal['cidade'] ?? null);
         $ufSeo     = $spot['uf_sede'] ?: ($cidadePrincipal['estado'] ?? null);

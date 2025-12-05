@@ -5,9 +5,12 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 use App\Models\SpotModel;
 use App\Models\SpotProdutoModel;
+use App\Traits\AuthTrait;
 
 class SpotProdutos extends BaseController
 {
+    use AuthTrait;
+
     protected SpotModel $spotModel;
     protected SpotProdutoModel $produtoModel;
 
@@ -15,45 +18,6 @@ class SpotProdutos extends BaseController
     {
         $this->spotModel    = new SpotModel();
         $this->produtoModel = new SpotProdutoModel();
-    }
-
-    /**
-     * Copia simplificada da checagem usada em Admin\Spots
-     * para garantir que vendedor só acesse seus próprios spots.
-     */
-    protected function getCurrentUser(): ?array
-    {
-        $session = session();
-
-        if (! $session->get('user_id')) {
-            return null;
-        }
-
-        return [
-            'id'     => (int) $session->get('user_id'),
-            'nome'   => (string) $session->get('user_nome'),
-            'email'  => (string) $session->get('user_email'),
-            'perfil' => (string) $session->get('user_perfil'),
-        ];
-    }
-
-    protected function canAccessSpot(array $spot): bool
-    {
-        $user = $this->getCurrentUser();
-
-        if (! $user) {
-            return false;
-        }
-
-        if ($user['perfil'] === 'admin') {
-            return true;
-        }
-
-        if ($user['perfil'] === 'vendedor' && (int) ($spot['vendedor_id'] ?? 0) === $user['id']) {
-            return true;
-        }
-
-        return false;
     }
 
     public function index(int $spotId)
@@ -133,6 +97,23 @@ class SpotProdutos extends BaseController
 
     public function delete(int $spotId, int $id)
     {
+        $spot = $this->spotModel->find($spotId);
+        if (! $spot) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
+        if (! $this->canAccessSpot($spot)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
+        $produto = $this->produtoModel
+            ->where('spot_id', $spotId)
+            ->find($id);
+
+        if (! $produto) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Produto não encontrado');
+        }
+
         $this->produtoModel
             ->where('spot_id', $spotId)
             ->delete($id);
@@ -169,9 +150,21 @@ class SpotProdutos extends BaseController
         }
 
         $imagens = $imagensAtuais;
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         for ($i = 1; $i <= 3; $i++) {
             $file = $this->request->getFile('imagem' . $i);
             if ($file && $file->isValid() && ! $file->hasMoved()) {
+                // Valida tipo de arquivo
+                $mimeType = $file->getMimeType();
+                if (! in_array($mimeType, $allowedTypes, true)) {
+                    return redirect()->back()->withInput()->with('errors', ['Tipo de arquivo inválido na imagem ' . $i . '. Use apenas imagens (JPG, PNG, GIF ou WEBP).']);
+                }
+
+                // Valida tamanho (máximo 5MB)
+                if ($file->getSize() > 5 * 1024 * 1024) {
+                    return redirect()->back()->withInput()->with('errors', ['Imagem ' . $i . ' muito grande. O tamanho máximo é 5MB.']);
+                }
+
                 $uploadDir = FCPATH . 'uploads/produtos';
                 if (! is_dir($uploadDir)) {
                     mkdir($uploadDir, 0775, true);

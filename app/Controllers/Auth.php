@@ -22,9 +22,25 @@ class Auth extends BaseController
         $email    = trim($post['email'] ?? '');
         $password = $post['password'] ?? '';
 
+        // Validação básica
+        if (empty($email) || empty($password)) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Email e senha são obrigatórios.');
+        }
+
+        // Validação de email
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Email inválido.');
+        }
+
         $userModel = new UserModel();
         $user      = $userModel
-            ->where('email', $email)
+            ->where('email', strtolower($email))
             ->where('ativo', 1)
             ->first();
 
