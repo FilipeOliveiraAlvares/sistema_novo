@@ -14,6 +14,7 @@ class SpotModel extends Model
     protected $useSoftDeletes   = false;
 
     protected $allowedFields    = [
+        'vendedor_id',
         'nome',
         'razao_social',
         'nome_fantasia',
@@ -23,6 +24,9 @@ class SpotModel extends Model
         'vigencia_contrato',
         'slug',
         'categoria',
+        'ramo',
+        'ramo_id',
+        'cidade_id',
         'servico_principal',
         'descricao',
         'texto_empresa',
@@ -47,7 +51,6 @@ class SpotModel extends Model
         'imagens',
         'logo',
         'mapa_embed',
-        'servicos_lista',
         'max_produtos',
         'max_servicos',
         'cidades_atendidas',

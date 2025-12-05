@@ -17,10 +17,53 @@ class SpotProdutos extends BaseController
         $this->produtoModel = new SpotProdutoModel();
     }
 
+    /**
+     * Copia simplificada da checagem usada em Admin\Spots
+     * para garantir que vendedor só acesse seus próprios spots.
+     */
+    protected function getCurrentUser(): ?array
+    {
+        $session = session();
+
+        if (! $session->get('user_id')) {
+            return null;
+        }
+
+        return [
+            'id'     => (int) $session->get('user_id'),
+            'nome'   => (string) $session->get('user_nome'),
+            'email'  => (string) $session->get('user_email'),
+            'perfil' => (string) $session->get('user_perfil'),
+        ];
+    }
+
+    protected function canAccessSpot(array $spot): bool
+    {
+        $user = $this->getCurrentUser();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user['perfil'] === 'admin') {
+            return true;
+        }
+
+        if ($user['perfil'] === 'vendedor' && (int) ($spot['vendedor_id'] ?? 0) === $user['id']) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function index(int $spotId)
     {
         $spot = $this->spotModel->find($spotId);
         if (! $spot) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
+        if (! $this->canAccessSpot($spot)) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
         }
 
@@ -45,6 +88,10 @@ class SpotProdutos extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
         }
 
+        if (! $this->canAccessSpot($spot)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
         if ($this->request->getMethod(true) === 'POST') {
             return $this->save($spot);
         }
@@ -59,6 +106,10 @@ class SpotProdutos extends BaseController
     {
         $spot = $this->spotModel->find($spotId);
         if (! $spot) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
+        if (! $this->canAccessSpot($spot)) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
         }
 

@@ -22,6 +22,9 @@
             <th>Nome</th>
             <th>Slug</th>
             <th>Categoria</th>
+            <?php if (isset($isAdmin) && $isAdmin): ?>
+                <th>Vendedor</th>
+            <?php endif; ?>
             <th>Status</th>
             <th>Ações</th>
         </tr>
@@ -34,6 +37,18 @@
                     <td><?= esc($spot['nome']); ?></td>
                     <td><?= esc($spot['slug']); ?></td>
                     <td><?= esc($spot['categoria'] ?? '-'); ?></td>
+                    <?php if (isset($isAdmin) && $isAdmin): ?>
+                        <td>
+                            <?php
+                            $vendedorId = (int) ($spot['vendedor_id'] ?? 0);
+                            if ($vendedorId > 0 && isset($vendedoresMap[$vendedorId])) {
+                                echo esc($vendedoresMap[$vendedorId]);
+                            } else {
+                                echo '<span style="color: #9ca3af;">Sem vendedor</span>';
+                            }
+                            ?>
+                        </td>
+                    <?php endif; ?>
                     <td>
                         <?php if ((int) ($spot['ativo'] ?? 0) === 1): ?>
                             <span class="badge badge-success">Ativo</span>
@@ -52,7 +67,7 @@
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="6">Nenhum spot cadastrado ainda.</td>
+                <td colspan="<?= (isset($isAdmin) && $isAdmin) ? '7' : '6'; ?>">Nenhum spot cadastrado ainda.</td>
             </tr>
         <?php endif; ?>
         </tbody>

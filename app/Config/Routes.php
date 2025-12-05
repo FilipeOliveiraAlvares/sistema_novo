@@ -13,6 +13,12 @@ $routes->get('logout', 'Auth::logout');
 
 // Admin - Spots
 $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => 'auth'], static function ($routes) {
+    // Usuários (apenas admin pode acessar, checado no controller)
+    $routes->get('usuarios', 'Usuarios::index');
+    $routes->match(['get', 'post'], 'usuarios/create', 'Usuarios::create');
+    $routes->match(['get', 'post'], 'usuarios/edit/(:num)', 'Usuarios::edit/$1');
+    $routes->get('usuarios/delete/(:num)', 'Usuarios::delete/$1');
+
     $routes->get('spots', 'Spots::index');
     $routes->match(['get', 'post'], 'spots/create', 'Spots::create');
     $routes->match(['get', 'post'], 'spots/edit/(:num)', 'Spots::edit/$1');
@@ -30,6 +36,9 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => 'au
     $routes->match(['get', 'post'], 'spots/(:num)/servicos/edit/(:num)', 'SpotServicos::edit/$1/$2');
     $routes->get('spots/(:num)/servicos/delete/(:num)', 'SpotServicos::delete/$1/$2');
 });
+
+// Busca pública
+$routes->get('busca', 'Busca::index');
 
 // Página pública do spot
 $routes->get('spot/(:segment)', 'Spot::view/$1');

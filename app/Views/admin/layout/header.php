@@ -275,12 +275,20 @@
             $segment1 = $uri->getSegment(1);
             $segment2 = $uri->getSegment(2);
             $isSpots = $segment1 === 'admin' && $segment2 === 'spots';
+            $isUsuarios = $segment1 === 'admin' && $segment2 === 'usuarios';
+            $isAdmin = session('user_perfil') === 'admin';
             ?>
             <nav class="admin-nav">
                 <a href="<?= site_url('admin/spots'); ?>"
                    class="admin-nav-link <?= $isSpots ? 'admin-nav-link--active' : ''; ?>">
                     Spots
                 </a>
+                <?php if ($isAdmin): ?>
+                    <a href="<?= site_url('admin/usuarios'); ?>"
+                       class="admin-nav-link <?= $isUsuarios ? 'admin-nav-link--active' : ''; ?>">
+                        Usuários
+                    </a>
+                <?php endif; ?>
                 <a href="<?= site_url('logout'); ?>" class="admin-nav-link">
                     Sair
                 </a>

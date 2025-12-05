@@ -88,6 +88,12 @@
             box-shadow: 0 14px 35px rgba(15, 23, 42, 0.12);
             display: flex;
             flex-direction: column;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
         }
 
         .badge {
@@ -138,17 +144,23 @@
 
         .media-slider-main {
             width: 100%;
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
             border: 1px solid rgba(148, 163, 184, 0.4);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            background: #f3f4f6;
         }
 
         .media-slider-main img {
             width: 100%;
-            height: 170px;
+            height: 200px;
             object-fit: cover;
             display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .service-card:hover .media-slider-main img {
+            transform: scale(1.03);
         }
 
         .media-slider-thumbs {
@@ -187,7 +199,7 @@
             }
 
             .media-slider-main img {
-                height: 190px;
+                height: 220px;
             }
         }
     </style>

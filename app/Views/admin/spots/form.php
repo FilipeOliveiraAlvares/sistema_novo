@@ -40,6 +40,21 @@
             <div class="help">Se deixar vazio, será gerado automaticamente a partir do nome.</div>
         </div>
 
+        <?php if (isset($isAdmin) && $isAdmin): ?>
+            <div class="field">
+                <label for="vendedor_id">Vendedor responsável</label>
+                <select name="vendedor_id" id="vendedor_id" style="width: 100%; padding: 8px 10px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box;">
+                    <option value="">-- Sem vendedor atribuído --</option>
+                    <?php foreach ($vendedores as $vendedor): ?>
+                        <option value="<?= esc($vendedor['id']); ?>" <?= old('vendedor_id', $spot['vendedor_id'] ?? '') == $vendedor['id'] ? 'selected' : ''; ?>>
+                            <?= esc($vendedor['nome']); ?> (<?= esc($vendedor['email']); ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="help">Escolha qual vendedor será responsável por este spot. Deixe em branco se não houver vendedor atribuído.</div>
+            </div>
+        <?php endif; ?>
+
         <div class="row">
             <div class="field col">
                 <label for="contrato">Nº contrato</label>
@@ -57,9 +72,56 @@
 
         <div class="row">
             <div class="field col">
-                <label for="categoria">Ramo / categoria</label>
+                <label for="categoria">Categoria</label>
                 <input type="text" name="categoria" id="categoria" value="<?= old('categoria', $spot['categoria'] ?? ''); ?>">
             </div>
+            <div class="field col">
+                <label for="ramo_id">Ramo de atuação</label>
+                <select name="ramo_id" id="ramo_id" style="width: 100%; padding: 8px 10px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box;">
+                    <option value="">-- Selecione um ramo --</option>
+                    <?php if (isset($ramos) && ! empty($ramos)): ?>
+                        <?php foreach ($ramos as $ramo): ?>
+                            <option value="<?= esc($ramo['id']); ?>" <?= old('ramo_id', $spot['ramo_id'] ?? '') == $ramo['id'] ? 'selected' : ''; ?>>
+                                <?= esc($ramo['nome']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+                <div class="help">Selecione o ramo de atuação principal da empresa.</div>
+            </div>
+            <div class="field col">
+                <label for="cidade_id">Cidade</label>
+                <select name="cidade_id" id="cidade_id" style="width: 100%; padding: 8px 10px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box;">
+                    <option value="">-- Selecione uma cidade --</option>
+                    <?php if (isset($cidades) && ! empty($cidades)): ?>
+                        <?php
+                        // Agrupa cidades por UF
+                        $cidadesPorUf = [];
+                        foreach ($cidades as $cidade) {
+                            $uf = $cidade['uf'] ?? '';
+                            if (! isset($cidadesPorUf[$uf])) {
+                                $cidadesPorUf[$uf] = [];
+                            }
+                            $cidadesPorUf[$uf][] = $cidade;
+                        }
+                        ksort($cidadesPorUf);
+                        ?>
+                        <?php foreach ($cidadesPorUf as $uf => $cidadesUf): ?>
+                            <optgroup label="<?= esc($uf); ?>">
+                                <?php foreach ($cidadesUf as $cidade): ?>
+                                    <option value="<?= esc($cidade['id']); ?>" <?= old('cidade_id', $spot['cidade_id'] ?? '') == $cidade['id'] ? 'selected' : ''; ?>>
+                                        <?= esc($cidade['nome']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+                <div class="help">Cidade principal onde a empresa está localizada.</div>
+            </div>
+        </div>
+
+        <div class="row">
             <div class="field col">
                 <label for="servico_principal">Serviço principal</label>
                 <input type="text" name="servico_principal" id="servico_principal" value="<?= old('servico_principal', $spot['servico_principal'] ?? ''); ?>">
@@ -106,29 +168,6 @@
         <div class="field">
             <label for="texto_servicos">Texto sobre produtos / serviços</label>
             <textarea name="texto_servicos" id="texto_servicos"><?= old('texto_servicos', $spot['texto_servicos'] ?? ''); ?></textarea>
-        </div>
-
-        <div class="field">
-            <label for="servicos_lista_bruto">Lista de serviços (para página dedicada)</label>
-            <textarea name="servicos_lista_bruto" id="servicos_lista_bruto"><?php
-                $servicosExistentes = [];
-                if (! empty($spot['servicos_lista'])) {
-                    $lista = json_decode($spot['servicos_lista'], true) ?: [];
-                    foreach ($lista as $item) {
-                        $linha = trim(($item['titulo'] ?? '') . ($item['descricao'] ? ' - ' . $item['descricao'] : ''));
-                        if ($linha !== '') {
-                            $servicosExistentes[] = $linha;
-                        }
-                    }
-                }
-                echo old('servicos_lista_bruto', implode("\n", $servicosExistentes));
-            ?></textarea>
-            <div class="help">
-                Um serviço por linha, no formato:<br>
-                <code>Nome do serviço - descrição opcional</code><br>
-                Exemplo:<br>
-                <code>Troca de óleo - Serviço rápido e completo<br>Revisão completa - Checagem de mais de 30 itens</code>
-            </div>
         </div>
 
         <div class="field">

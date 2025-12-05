@@ -6,6 +6,8 @@ use App\Controllers\BaseController;
 use App\Models\SpotModel;
 use App\Models\SpotProdutoModel;
 use App\Models\SpotServicoModel;
+use App\Models\CidadeModel;
+use App\Models\RamoModel;
 
 class Spot extends BaseController
 {
@@ -104,9 +106,25 @@ class Spot extends BaseController
 
         $descricaoSeo .= '. Entre em contato para mais informações.';
 
+        // Carrega dados da cidade e ramo se existirem
+        $cidadeModel = new CidadeModel();
+        $ramoModel = new RamoModel();
+        $cidadeSpot = null;
+        $ramoSpot = null;
+
+        if (! empty($spot['cidade_id'])) {
+            $cidadeSpot = $cidadeModel->find($spot['cidade_id']);
+        }
+
+        if (! empty($spot['ramo_id'])) {
+            $ramoSpot = $ramoModel->find($spot['ramo_id']);
+        }
+
         $data = [
             'spot'               => $spot,
             'cidades'            => $cidades,
+            'cidade_spot'        => $cidadeSpot,
+            'ramo_spot'          => $ramoSpot,
             'titulo_seo'         => $tituloSeo,
             'descricao_seo'      => $descricaoSeo,
             'servicos_destaque'  => $servicosDestaque,
@@ -144,6 +162,20 @@ class Spot extends BaseController
             ->findAll();
         $cidadePrincipal = $cidades[0] ?? null;
 
+        // Carrega dados da cidade e ramo se existirem
+        $cidadeModel = new CidadeModel();
+        $ramoModel = new RamoModel();
+        $cidadeSpot = null;
+        $ramoSpot = null;
+
+        if (! empty($spot['cidade_id'])) {
+            $cidadeSpot = $cidadeModel->find($spot['cidade_id']);
+        }
+
+        if (! empty($spot['ramo_id'])) {
+            $ramoSpot = $ramoModel->find($spot['ramo_id']);
+        }
+
         $nomeBase  = $spot['nome_fantasia'] ?: $spot['nome'];
         $cidadeSeo = $spot['cidade_sede'] ?: ($cidadePrincipal['cidade'] ?? null);
         $ufSeo     = $spot['uf_sede'] ?: ($cidadePrincipal['estado'] ?? null);
@@ -171,6 +203,8 @@ class Spot extends BaseController
         $data = [
             'spot'          => $spot,
             'cidades'       => $cidades,
+            'cidade_spot'  => $cidadeSpot,
+            'ramo_spot'     => $ramoSpot,
             'servicos'      => $servicos,
             'titulo_seo'    => $tituloSeo,
             'descricao_seo' => $descricaoSeo,
@@ -231,6 +265,8 @@ class Spot extends BaseController
 
         $data = [
             'spot'          => $spot,
+            'cidade_spot'  => $cidadeSpot,
+            'ramo_spot'     => $ramoSpot,
             'produtos'      => $produtos,
             'titulo_seo'    => $tituloSeo,
             'descricao_seo' => $descricaoSeo,

@@ -4,6 +4,9 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\SpotModel;
+use App\Models\UserModel;
+use App\Models\CidadeModel;
+use App\Models\RamoModel;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 
 class Spots extends BaseController
@@ -15,9 +18,84 @@ class Spots extends BaseController
         $this->spotModel = new SpotModel();
     }
 
+    /**
+     * Retorna dados básicos do usuário logado a partir da sessão.
+     */
+    protected function getCurrentUser(): ?array
+    {
+        $session = session();
+
+        if (! $session->get('user_id')) {
+            return null;
+        }
+
+        return [
+            'id'     => (int) $session->get('user_id'),
+            'nome'   => (string) $session->get('user_nome'),
+            'email'  => (string) $session->get('user_email'),
+            'perfil' => (string) $session->get('user_perfil'),
+        ];
+    }
+
+    /**
+     * Verifica se o usuário logado pode acessar o spot informado.
+     * Regra:
+     * - admin: pode tudo
+     * - vendedor: apenas spots onde vendedor_id = seu id
+     */
+    protected function canAccessSpot(array $spot): bool
+    {
+        $user = $this->getCurrentUser();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user['perfil'] === 'admin') {
+            return true;
+        }
+
+        if ($user['perfil'] === 'vendedor' && (int) ($spot['vendedor_id'] ?? 0) === $user['id']) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function index()
     {
-        $data['spots'] = $this->spotModel->orderBy('id', 'DESC')->findAll();
+        $user = $this->getCurrentUser();
+
+        $builder = $this->spotModel->orderBy('id', 'DESC');
+
+        // Se for vendedor, mostra apenas seus próprios spots
+        if ($user && $user['perfil'] === 'vendedor') {
+            $builder = $builder->where('vendedor_id', $user['id']);
+        }
+
+        $spots = $builder->findAll();
+
+        // Se for admin, carrega nomes dos vendedores para exibir na lista
+        $vendedoresMap = [];
+        if ($user && $user['perfil'] === 'admin' && ! empty($spots)) {
+            $userModel = new UserModel();
+            $vendedoresIds = array_filter(array_unique(array_column($spots, 'vendedor_id')));
+            if (! empty($vendedoresIds)) {
+                // Usa Query Builder para buscar múltiplos IDs
+                $db = \Config\Database::connect();
+                $vendedores = $db->table('usuarios')
+                    ->whereIn('id', $vendedoresIds)
+                    ->get()
+                    ->getResultArray();
+                foreach ($vendedores as $v) {
+                    $vendedoresMap[(int) $v['id']] = $v['nome'];
+                }
+            }
+        }
+
+        $data['spots'] = $spots;
+        $data['vendedoresMap'] = $vendedoresMap;
+        $data['isAdmin'] = $user && $user['perfil'] === 'admin';
 
         return view('admin/spots/index', $data);
     }
@@ -28,7 +106,36 @@ class Spots extends BaseController
             return $this->saveSpot();
         }
 
+        $user = $this->getCurrentUser();
         $data['spot'] = null;
+        $data['vendedores'] = [];
+        $data['isAdmin'] = $user && $user['perfil'] === 'admin';
+
+        // Se for admin, carrega lista de vendedores para o select
+        if ($data['isAdmin']) {
+            $userModel = new UserModel();
+            $data['vendedores'] = $userModel
+                ->where('perfil', 'vendedor')
+                ->where('ativo', 1)
+                ->orderBy('nome', 'ASC')
+                ->findAll();
+        }
+
+        // Carrega lista de cidades para o select
+        $cidadeModel = new CidadeModel();
+        $data['cidades'] = $cidadeModel
+            ->where('ativo', 1)
+            ->orderBy('uf', 'ASC')
+            ->orderBy('nome', 'ASC')
+            ->findAll();
+
+        // Carrega lista de ramos para o select
+        $ramoModel = new RamoModel();
+        $data['ramos'] = $ramoModel
+            ->where('ativo', 1)
+            ->orderBy('ordem', 'ASC')
+            ->orderBy('nome', 'ASC')
+            ->findAll();
 
         return view('admin/spots/form', $data);
     }
@@ -41,17 +148,61 @@ class Spots extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
         }
 
+        // Bloqueia acesso se o vendedor tentar editar spot de outro vendedor
+        if (! $this->canAccessSpot($spot)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
         if ($this->request->getMethod(true) === 'POST') {
             return $this->saveSpot($id);
         }
 
+        $user = $this->getCurrentUser();
         $data['spot'] = $spot;
+        $data['vendedores'] = [];
+        $data['isAdmin'] = $user && $user['perfil'] === 'admin';
+
+        // Se for admin, carrega lista de vendedores para o select
+        if ($data['isAdmin']) {
+            $userModel = new UserModel();
+            $data['vendedores'] = $userModel
+                ->where('perfil', 'vendedor')
+                ->where('ativo', 1)
+                ->orderBy('nome', 'ASC')
+                ->findAll();
+        }
+
+        // Carrega lista de cidades para o select
+        $cidadeModel = new CidadeModel();
+        $data['cidades'] = $cidadeModel
+            ->where('ativo', 1)
+            ->orderBy('uf', 'ASC')
+            ->orderBy('nome', 'ASC')
+            ->findAll();
+
+        // Carrega lista de ramos para o select
+        $ramoModel = new RamoModel();
+        $data['ramos'] = $ramoModel
+            ->where('ativo', 1)
+            ->orderBy('ordem', 'ASC')
+            ->orderBy('nome', 'ASC')
+            ->findAll();
 
         return view('admin/spots/form', $data);
     }
 
     public function delete(int $id)
     {
+        $spot = $this->spotModel->find($id);
+
+        if (! $spot) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
+        if (! $this->canAccessSpot($spot)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
+        }
+
         $this->spotModel->delete($id);
 
         return redirect()->to('/admin/spots')->with('message', 'Spot removido com sucesso.');
@@ -64,12 +215,12 @@ class Spots extends BaseController
      */
     protected function saveSpot(?int $id = null)
     {
+        $user = $this->getCurrentUser();
+
         $post = $this->request->getPost();
 
         $cidadesRaw   = $post['cidades_atendidas'] ?? '';
         $cidades      = $this->parseCidades($cidadesRaw);
-        $servicosRaw  = $post['servicos_lista_bruto'] ?? '';
-        $servicosLista = $this->parseServicos($servicosRaw);
 
         $slug = $post['slug'] ?: url_title($post['nome'], '-', true);
 
@@ -102,6 +253,8 @@ class Spots extends BaseController
             'vigencia_contrato'         => $post['vigencia_contrato'] ?? null,
             'slug'                      => $slug,
             'categoria'                 => $post['categoria'] ?? null,
+            'ramo'                      => $post['ramo'] ?? null,
+            'cidade_id'                 => $post['cidade_id'] !== '' ? (int) $post['cidade_id'] : null,
             'servico_principal'         => $post['servico_principal'] ?? null,
             'descricao'                 => $post['descricao'] ?? null,
             'texto_empresa'             => $post['texto_empresa'] ?? null,
@@ -126,12 +279,25 @@ class Spots extends BaseController
             'imagens'                   => null, // upload de galeria será tratado depois
             'logo'                      => $logoPath,
             'mapa_embed'                => $post['mapa_embed'] ?? null,
-            'servicos_lista'            => $servicosLista ? json_encode($servicosLista) : null,
             'cidades_atendidas'         => json_encode($cidades),
             'max_produtos'              => $post['max_produtos'] !== '' ? (int) $post['max_produtos'] : null,
             'max_servicos'              => $post['max_servicos'] !== '' ? (int) $post['max_servicos'] : null,
             'ativo'                     => isset($post['ativo']) ? 1 : 0,
         ];
+
+        // Define o vendedor responsável pelo spot
+        if ($user && $user['perfil'] === 'vendedor') {
+            // Vendedor sempre cria spots para si mesmo
+            $spotData['vendedor_id'] = $user['id'];
+        } elseif ($user && $user['perfil'] === 'admin') {
+            // Admin pode escolher o vendedor (ou deixar null)
+            $vendedorId = $post['vendedor_id'] ?? null;
+            if ($vendedorId !== '' && $vendedorId !== null) {
+                $spotData['vendedor_id'] = (int) $vendedorId;
+            } else {
+                $spotData['vendedor_id'] = null;
+            }
+        }
 
         // Insere ou atualiza de forma explícita usando o Query Builder,
         // para conseguirmos ver claramente qualquer erro de banco.
@@ -191,33 +357,5 @@ class Spots extends BaseController
         return $saida;
     }
 
-    /**
-     * Recebe um texto como:
-     * "Troca de óleo - Serviço rápido e completo
-     * Alinhamento e balanceamento - Equipamentos modernos"
-     * e retorna um array estruturado.
-     */
-    protected function parseServicos(string $servicosRaw): array
-    {
-        $linhas  = preg_split('/\r\n|\r|\n/', $servicosRaw);
-        $linhas  = array_filter(array_map('trim', $linhas));
-        $saida   = [];
-
-        foreach ($linhas as $linha) {
-            // Formato sugerido: Título - Descrição
-            [$titulo, $descricao] = array_pad(array_map('trim', explode(' - ', $linha, 2)), 2, '');
-
-            if ($titulo === '') {
-                continue;
-            }
-
-            $saida[] = [
-                'titulo'     => $titulo,
-                'descricao'  => $descricao,
-            ];
-        }
-
-        return $saida;
-    }
 }
 

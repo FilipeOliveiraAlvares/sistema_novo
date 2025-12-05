@@ -363,44 +363,61 @@
 
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-top: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 14px;
         }
 
         .gallery-item {
-            border-radius: 14px;
+            border-radius: 16px;
             overflow: hidden;
             border: 1px solid var(--border-soft);
             background: #ffffff;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
         }
 
         .gallery-img-wrapper {
             width: 100%;
             overflow: hidden;
+            position: relative;
+            background: #f3f4f6;
         }
 
         .gallery-img-wrapper img {
             width: 100%;
-            height: 150px;
+            height: 200px;
             object-fit: cover;
             display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover .gallery-img-wrapper img {
+            transform: scale(1.05);
         }
 
         .gallery-meta {
-            padding: 8px 10px 9px;
+            padding: 12px 14px;
         }
 
         .gallery-meta-title {
-            font-size: 13px;
-            font-weight: 500;
-            margin: 0 0 2px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 4px;
             color: var(--text-main);
+            line-height: 1.4;
         }
 
         .gallery-meta-type {
             font-size: 11px;
             color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         @media (max-width: 768px) {
@@ -491,9 +508,22 @@
         <div class="header-main">
             <h1><?= esc($nomePublico); ?><?= $cidadePrincipal ? ' em ' . esc($cidadePrincipal['cidade']) . ' - ' . esc($cidadePrincipal['estado']) : ''; ?></h1>
             <p>
-                <?= esc($spot['categoria'] ?? 'Serviços'); ?>
-                <?php if ($cidadePrincipal): ?>
-                    em <?= esc($cidadePrincipal['cidade']); ?> e região.
+                <?php
+                // Mostra ramo se existir, senão categoria
+                $ramoNome = '';
+                if (! empty($ramo_spot)) {
+                    $ramoNome = $ramo_spot['nome'];
+                } elseif (! empty($spot['ramo'])) {
+                    $ramoNome = $spot['ramo'];
+                } else {
+                    $ramoNome = $spot['categoria'] ?? 'Serviços';
+                }
+                echo esc($ramoNome);
+                ?>
+                <?php if ($cidade_spot): ?>
+                    em <?= esc($cidade_spot['nome']); ?> - <?= esc($cidade_spot['uf']); ?>
+                <?php elseif ($cidadePrincipal): ?>
+                    em <?= esc($cidadePrincipal['cidade']); ?> e região
                 <?php endif; ?>
             </p>
             <div class="header-cta">
@@ -530,6 +560,26 @@
     <section class="card grid">
         <div>
             <div class="label">Sobre o negócio</div>
+            <div style="margin-bottom: 8px;">
+                <?php
+                $ramoNome = '';
+                if (! empty($ramo_spot)) {
+                    $ramoNome = $ramo_spot['nome'];
+                } elseif (! empty($spot['ramo'])) {
+                    $ramoNome = $spot['ramo'];
+                }
+                if ($ramoNome !== ''):
+                ?>
+                    <span class="badge" style="background: rgba(26, 115, 232, 0.1); color: var(--accent-primary); padding: 4px 10px; border-radius: 999px; font-size: 12px; margin-right: 6px;">
+                        <?= esc($ramoNome); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if ($cidade_spot): ?>
+                    <span class="badge" style="background: rgba(22, 163, 74, 0.1); color: #15803d; padding: 4px 10px; border-radius: 999px; font-size: 12px;">
+                        📍 <?= esc($cidade_spot['nome']); ?> - <?= esc($cidade_spot['uf']); ?>
+                    </span>
+                <?php endif; ?>
+            </div>
             <h2><?= esc($nomePublico); ?></h2>
             <?php if (! empty($spot['texto_empresa'])): ?>
                 <p><?= nl2br(esc($spot['texto_empresa'])); ?></p>
@@ -597,12 +647,30 @@
         <div class="label">Conteúdo otimizado</div>
         <p>
             <?= esc($nomePublico); ?>
-            <?php if ($cidadePrincipal): ?>
-                atende <?= esc($cidadePrincipal['cidade']); ?> e região,
-            <?php else: ?>
-                oferece atendimento na região,
-            <?php endif; ?>
-            com foco em <?= esc($spot['servico_principal'] ?: ($spot['categoria'] ?? 'serviços especializados')); ?>.
+            <?php
+            $cidadeTexto = '';
+            if ($cidade_spot) {
+                $cidadeTexto = 'atende ' . esc($cidade_spot['nome']) . ' - ' . esc($cidade_spot['uf']);
+            } elseif ($cidadePrincipal) {
+                $cidadeTexto = 'atende ' . esc($cidadePrincipal['cidade']) . ' e região';
+            } else {
+                $cidadeTexto = 'oferece atendimento na região';
+            }
+            echo $cidadeTexto;
+            ?>,
+            <?php
+            $ramoTexto = '';
+            if (! empty($ramo_spot)) {
+                $ramoTexto = 'na área de ' . esc($ramo_spot['nome']);
+            } elseif (! empty($spot['ramo'])) {
+                $ramoTexto = 'no ramo de ' . esc($spot['ramo']);
+            } elseif (! empty($spot['servico_principal'])) {
+                $ramoTexto = 'com foco em ' . esc($spot['servico_principal']);
+            } else {
+                $ramoTexto = 'com serviços especializados';
+            }
+            echo $ramoTexto;
+            ?>.
         </p>
         <?php if (! empty($spot['texto_servicos'])): ?>
             <p><?= nl2br(esc($spot['texto_servicos'])); ?></p>
