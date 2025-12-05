@@ -168,6 +168,16 @@ class SpotServicos extends BaseController
                     return redirect()->back()->withInput()->with('errors', ['Imagem ' . $i . ' muito grande. O tamanho máximo é 5MB.']);
                 }
 
+                // Valida dimensões da imagem (máximo 4000x4000px)
+                $imageInfo = @getimagesize($file->getTempName());
+                if ($imageInfo !== false) {
+                    $maxWidth = 4000;
+                    $maxHeight = 4000;
+                    if ($imageInfo[0] > $maxWidth || $imageInfo[1] > $maxHeight) {
+                        return redirect()->back()->withInput()->with('errors', ['Imagem ' . $i . ' muito grande. Dimensões máximas: ' . $maxWidth . 'x' . $maxHeight . ' pixels.']);
+                    }
+                }
+
                 // Armazena o arquivo válido para mover depois
                 $arquivosValidos[$i] = $file;
             }
@@ -176,7 +186,7 @@ class SpotServicos extends BaseController
         // Segunda passagem: move apenas os arquivos que passaram na validação
         $uploadDir = FCPATH . 'uploads/servicos';
         if (! empty($arquivosValidos) && ! is_dir($uploadDir)) {
-            mkdir($uploadDir, 0775, true);
+            mkdir($uploadDir, 0755, true);
         }
 
         foreach ($arquivosValidos as $i => $file) {

@@ -1,5 +1,11 @@
 <?= $this->include('admin/layout/header') ?>
 
+<div class="breadcrumbs">
+    <a href="<?= site_url('admin/usuarios'); ?>">Usuários</a>
+    <span class="breadcrumbs-separator">/</span>
+    <span class="breadcrumbs-current">Lista</span>
+</div>
+
 <div class="admin-card">
     <div class="admin-card-header">
         <div>
@@ -12,11 +18,11 @@
     </div>
 
     <?php if (session()->getFlashdata('message')): ?>
-        <p style="color: #16a34a; margin: 10px 0;"><?= esc(session()->getFlashdata('message')); ?></p>
+        <div data-flash-message data-flash-type="success" style="display: none;"><?= esc(session()->getFlashdata('message')); ?></div>
     <?php endif; ?>
 
     <?php if (session()->getFlashdata('error')): ?>
-        <p style="color: #b91c1c; margin: 10px 0;"><?= esc(session()->getFlashdata('error')); ?></p>
+        <div data-flash-message data-flash-type="error" style="display: none;"><?= esc(session()->getFlashdata('error')); ?></div>
     <?php endif; ?>
 
     <table>

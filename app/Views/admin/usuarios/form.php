@@ -1,5 +1,11 @@
 <?= $this->include('admin/layout/header') ?>
 
+<div class="breadcrumbs">
+    <a href="<?= site_url('admin/usuarios'); ?>">Usuários</a>
+    <span class="breadcrumbs-separator">/</span>
+    <span class="breadcrumbs-current"><?= isset($usuario) && $usuario ? 'Editar' : 'Novo'; ?></span>
+</div>
+
 <div style="max-width:900px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
     <h1><?= isset($usuario) && $usuario ? 'Editar Usuário' : 'Novo Usuário'; ?></h1>
 

@@ -1,5 +1,11 @@
 <?= $this->include('admin/layout/header') ?>
 
+<div class="breadcrumbs">
+    <a href="<?= site_url('admin/spots'); ?>">Spots</a>
+    <span class="breadcrumbs-separator">/</span>
+    <span class="breadcrumbs-current"><?= isset($spot) && $spot ? 'Editar' : 'Novo'; ?></span>
+</div>
+
 <div style="max-width:900px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
     <h1><?= isset($spot) && $spot ? 'Editar Spot' : 'Novo Spot'; ?></h1>
 
@@ -273,8 +279,12 @@
         <div class="field">
             <label for="logo">Logo do cliente</label>
             <?php if (! empty($spot['logo'])): ?>
-                <div style="margin-bottom:8px;">
-                    <img src="<?= esc(base_url($spot['logo'])); ?>" alt="Logo atual" style="max-height:60px;">
+                <div id="logo-preview-container" style="margin-bottom:8px;">
+                    <img id="logo-preview" src="<?= esc(base_url($spot['logo'])); ?>" alt="Logo atual" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #d1d5db;">
+                </div>
+            <?php else: ?>
+                <div id="logo-preview-container" style="margin-top: 10px; display: none;">
+                    <img id="logo-preview" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #d1d5db;">
                 </div>
             <?php endif; ?>
             <input type="file" name="logo" id="logo" accept="image/*">

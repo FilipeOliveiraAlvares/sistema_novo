@@ -80,21 +80,11 @@ class Spots extends BaseController
                 ->findAll();
         }
 
-        // Carrega lista de cidades para o select
-        $cidadeModel = new CidadeModel();
-        $data['cidades'] = $cidadeModel
-            ->where('ativo', 1)
-            ->orderBy('uf', 'ASC')
-            ->orderBy('nome', 'ASC')
-            ->findAll();
+        // Carrega lista de cidades para o select (com cache)
+        $data['cidades'] = $this->getCidadesCached();
 
-        // Carrega lista de ramos para o select
-        $ramoModel = new RamoModel();
-        $data['ramos'] = $ramoModel
-            ->where('ativo', 1)
-            ->orderBy('ordem', 'ASC')
-            ->orderBy('nome', 'ASC')
-            ->findAll();
+        // Carrega lista de ramos para o select (com cache)
+        $data['ramos'] = $this->getRamosCached();
 
         return view('admin/spots/form', $data);
     }
@@ -131,21 +121,11 @@ class Spots extends BaseController
                 ->findAll();
         }
 
-        // Carrega lista de cidades para o select
-        $cidadeModel = new CidadeModel();
-        $data['cidades'] = $cidadeModel
-            ->where('ativo', 1)
-            ->orderBy('uf', 'ASC')
-            ->orderBy('nome', 'ASC')
-            ->findAll();
+        // Carrega lista de cidades para o select (com cache)
+        $data['cidades'] = $this->getCidadesCached();
 
-        // Carrega lista de ramos para o select
-        $ramoModel = new RamoModel();
-        $data['ramos'] = $ramoModel
-            ->where('ativo', 1)
-            ->orderBy('ordem', 'ASC')
-            ->orderBy('nome', 'ASC')
-            ->findAll();
+        // Carrega lista de ramos para o select (com cache)
+        $data['ramos'] = $this->getRamosCached();
 
         return view('admin/spots/form', $data);
     }
@@ -193,6 +173,28 @@ class Spots extends BaseController
             return redirect()->back()->withInput()->with('errors', ['O slug gerado é inválido. Verifique o nome do spot.']);
         }
 
+        // Validação de URLs (site, facebook, instagram)
+        $urlErrors = [];
+        if (!empty($post['site']) && !filter_var($post['site'], FILTER_VALIDATE_URL)) {
+            $urlErrors[] = 'URL do site inválida. Use um formato válido (ex: https://www.exemplo.com.br).';
+        }
+        if (!empty($post['facebook']) && !filter_var($post['facebook'], FILTER_VALIDATE_URL)) {
+            $urlErrors[] = 'URL do Facebook inválida. Use um formato válido (ex: https://www.facebook.com/pagina).';
+        }
+        if (!empty($post['instagram']) && !filter_var($post['instagram'], FILTER_VALIDATE_URL)) {
+            $urlErrors[] = 'URL do Instagram inválida. Use um formato válido (ex: https://www.instagram.com/perfil).';
+        }
+        if (!empty($urlErrors)) {
+            return redirect()->back()->withInput()->with('errors', $urlErrors);
+        }
+
+        // Validação de CPF/CNPJ (se informado)
+        if (!empty($post['cpf_cnpj'])) {
+            if (!$this->validarCPFCNPJ($post['cpf_cnpj'])) {
+                return redirect()->back()->withInput()->with('errors', ['CPF/CNPJ inválido. Verifique os dados informados.']);
+            }
+        }
+
         // Tratamento do upload de logo
         $logoPath = $post['logo_atual'] ?? null;
         $logoFile = $this->request->getFile('logo');
@@ -210,11 +212,21 @@ class Spots extends BaseController
                 return redirect()->back()->withInput()->with('errors', ['Arquivo muito grande. O tamanho máximo é 5MB.']);
             }
 
+            // Valida dimensões da imagem (máximo 4000x4000px)
+            $imageInfo = @getimagesize($logoFile->getTempName());
+            if ($imageInfo !== false) {
+                $maxWidth = 4000;
+                $maxHeight = 4000;
+                if ($imageInfo[0] > $maxWidth || $imageInfo[1] > $maxHeight) {
+                    return redirect()->back()->withInput()->with('errors', ['Imagem muito grande. Dimensões máximas: ' . $maxWidth . 'x' . $maxHeight . ' pixels.']);
+                }
+            }
+
             // Salva o logo dentro da pasta public/uploads/logos
             $uploadDir = FCPATH . 'uploads/logos';
 
             if (! is_dir($uploadDir)) {
-                mkdir($uploadDir, 0775, true);
+                mkdir($uploadDir, 0755, true);
             }
 
             $newName = $logoFile->getRandomName();
@@ -260,7 +272,7 @@ class Spots extends BaseController
             'obs_extras'                => $post['obs_extras'] ?? null,
             'imagens'                   => null, // upload de galeria será tratado depois
             'logo'                      => $logoPath,
-            'mapa_embed'                => $post['mapa_embed'] ?? null,
+            'mapa_embed'                => $this->sanitizeMapaEmbed($post['mapa_embed'] ?? null),
             'cidades_atendidas'         => json_encode($cidades),
             'max_produtos'              => $post['max_produtos'] !== '' ? (int) $post['max_produtos'] : null,
             'max_servicos'              => $post['max_servicos'] !== '' ? (int) $post['max_servicos'] : null,
@@ -315,6 +327,39 @@ class Spots extends BaseController
     }
 
     /**
+     * Sanitiza o campo mapa_embed para permitir apenas iframes seguros do Google Maps.
+     * Remove qualquer conteúdo malicioso e valida que é um iframe do Google Maps.
+     *
+     * @param string|null $mapaEmbed
+     * @return string|null
+     */
+    protected function sanitizeMapaEmbed(?string $mapaEmbed): ?string
+    {
+        if (empty($mapaEmbed)) {
+            return null;
+        }
+
+        // Remove espaços em branco
+        $mapaEmbed = trim($mapaEmbed);
+
+        // Verifica se contém um iframe do Google Maps
+        // Padrão: iframe com src contendo google.com/maps/embed
+        if (preg_match('/<iframe[^>]*src=["\'](https?:\/\/www\.google\.com\/maps\/embed[^"\']*)["\'][^>]*><\/iframe>/i', $mapaEmbed, $matches)) {
+            // Extrai apenas o iframe válido e sanitiza
+            $src = $matches[1];
+            
+            // Valida que a URL é realmente do Google Maps
+            if (filter_var($src, FILTER_VALIDATE_URL) && strpos($src, 'google.com/maps/embed') !== false) {
+                // Retorna apenas o iframe sanitizado (esc() já sanitiza para HTML)
+                return '<iframe src="' . esc($src) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+            }
+        }
+
+        // Se não for um iframe válido do Google Maps, retorna null
+        return null;
+    }
+
+    /**
      * Recebe um texto como:
      * "Ribeirão Preto/SP, Sertãozinho/SP, Franca/SP"
      * e retorna um array estruturado.
@@ -339,5 +384,152 @@ class Spots extends BaseController
         return $saida;
     }
 
+    /**
+     * Retorna lista de cidades com cache (1 hora)
+     */
+    protected function getCidadesCached(): array
+    {
+        $cache = \Config\Services::cache();
+        $cacheKey = 'cidades_lista_ativa';
+
+        $cidades = $cache->get($cacheKey);
+
+        if ($cidades === null) {
+            $cidadeModel = new CidadeModel();
+            $cidades = $cidadeModel
+                ->where('ativo', 1)
+                ->orderBy('uf', 'ASC')
+                ->orderBy('nome', 'ASC')
+                ->findAll();
+
+            // Cache por 1 hora (3600 segundos)
+            $cache->save($cacheKey, $cidades, 3600);
+        }
+
+        return $cidades;
+    }
+
+    /**
+     * Retorna lista de ramos com cache (1 hora)
+     */
+    protected function getRamosCached(): array
+    {
+        $cache = \Config\Services::cache();
+        $cacheKey = 'ramos_lista_ativa';
+
+        $ramos = $cache->get($cacheKey);
+
+        if ($ramos === null) {
+            $ramoModel = new RamoModel();
+            $ramos = $ramoModel
+                ->where('ativo', 1)
+                ->orderBy('ordem', 'ASC')
+                ->orderBy('nome', 'ASC')
+                ->findAll();
+
+            // Cache por 1 hora (3600 segundos)
+            $cache->save($cacheKey, $ramos, 3600);
+        }
+
+        return $ramos;
+    }
+
+    /**
+     * Valida CPF ou CNPJ
+     * 
+     * @param string $cpfCnpj CPF ou CNPJ (pode conter formatação)
+     * @return bool True se válido, false caso contrário
+     */
+    protected function validarCPFCNPJ(string $cpfCnpj): bool
+    {
+        // Remove formatação (pontos, traços, barras, espaços)
+        $cpfCnpj = preg_replace('/[^0-9]/', '', $cpfCnpj);
+        
+        // Valida CPF (11 dígitos)
+        if (strlen($cpfCnpj) === 11) {
+            return $this->validarCPF($cpfCnpj);
+        }
+        
+        // Valida CNPJ (14 dígitos)
+        if (strlen($cpfCnpj) === 14) {
+            return $this->validarCNPJ($cpfCnpj);
+        }
+        
+        return false;
+    }
+
+    /**
+     * Valida CPF
+     * 
+     * @param string $cpf CPF sem formatação (11 dígitos)
+     * @return bool True se válido, false caso contrário
+     */
+    protected function validarCPF(string $cpf): bool
+    {
+        // Verifica se todos os dígitos são iguais
+        if (preg_match('/(\d)\1{10}/', $cpf)) {
+            return false;
+        }
+        
+        // Valida primeiro dígito verificador
+        $soma = 0;
+        for ($i = 0; $i < 9; $i++) {
+            $soma += (int) $cpf[$i] * (10 - $i);
+        }
+        $resto = $soma % 11;
+        $digito1 = ($resto < 2) ? 0 : 11 - $resto;
+        
+        if ((int) $cpf[9] !== $digito1) {
+            return false;
+        }
+        
+        // Valida segundo dígito verificador
+        $soma = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $soma += (int) $cpf[$i] * (11 - $i);
+        }
+        $resto = $soma % 11;
+        $digito2 = ($resto < 2) ? 0 : 11 - $resto;
+        
+        return (int) $cpf[10] === $digito2;
+    }
+
+    /**
+     * Valida CNPJ
+     * 
+     * @param string $cnpj CNPJ sem formatação (14 dígitos)
+     * @return bool True se válido, false caso contrário
+     */
+    protected function validarCNPJ(string $cnpj): bool
+    {
+        // Verifica se todos os dígitos são iguais
+        if (preg_match('/(\d)\1{13}/', $cnpj)) {
+            return false;
+        }
+        
+        // Valida primeiro dígito verificador
+        $pesos = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $soma = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $soma += (int) $cnpj[$i] * $pesos[$i];
+        }
+        $resto = $soma % 11;
+        $digito1 = ($resto < 2) ? 0 : 11 - $resto;
+        
+        if ((int) $cnpj[12] !== $digito1) {
+            return false;
+        }
+        
+        // Valida segundo dígito verificador
+        $pesos = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $soma = 0;
+        for ($i = 0; $i < 13; $i++) {
+            $soma += (int) $cnpj[$i] * $pesos[$i];
+        }
+        $resto = $soma % 11;
+        $digito2 = ($resto < 2) ? 0 : 11 - $resto;
+        
+        return (int) $cnpj[13] === $digito2;
+    }
 }
 

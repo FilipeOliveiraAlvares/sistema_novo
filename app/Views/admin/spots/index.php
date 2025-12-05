@@ -1,5 +1,11 @@
 <?= $this->include('admin/layout/header') ?>
 
+<div class="breadcrumbs">
+    <a href="<?= site_url('admin/spots'); ?>">Spots</a>
+    <span class="breadcrumbs-separator">/</span>
+    <span class="breadcrumbs-current">Lista</span>
+</div>
+
 <div class="admin-card">
     <div class="admin-card-header">
         <div>
@@ -12,8 +18,36 @@
     </div>
 
     <?php if (session()->getFlashdata('message')): ?>
-        <p><?= esc(session()->getFlashdata('message')); ?></p>
+        <div data-flash-message data-flash-type="success" style="display: none;"><?= esc(session()->getFlashdata('message')); ?></div>
     <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')): ?>
+        <div data-flash-message data-flash-type="error" style="display: none;"><?= esc(session()->getFlashdata('error')); ?></div>
+    <?php endif; ?>
+
+    <div class="search-filters">
+        <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Buscar por nome, slug ou categoria..." 
+            onkeyup="filterTable()"
+        >
+        <select id="status-filter" onchange="filterTable()">
+            <option value="">Todos os status</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+        </select>
+        <?php if (isset($isAdmin) && $isAdmin && !empty($vendedoresMap)): ?>
+            <select id="vendedor-filter" onchange="filterTable()">
+                <option value="">Todos os vendedores</option>
+                <?php foreach ($vendedoresMap as $id => $nome): ?>
+                    <option value="<?= esc($nome); ?>"><?= esc($nome); ?></option>
+                <?php endforeach; ?>
+            </select>
+        <?php endif; ?>
+        <button type="button" class="btn-clear" onclick="clearFilters()">Limpar</button>
+        <span class="result-count" id="result-count"></span>
+    </div>
 
     <table>
         <thead>

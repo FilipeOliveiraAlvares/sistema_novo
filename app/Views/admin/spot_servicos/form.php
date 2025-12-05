@@ -1,5 +1,15 @@
 <?= $this->include('admin/layout/header') ?>
 
+<div class="breadcrumbs">
+    <a href="<?= site_url('admin/spots'); ?>">Spots</a>
+    <span class="breadcrumbs-separator">/</span>
+    <a href="<?= site_url('admin/spots/edit/' . $spot['id']); ?>"><?= esc($spot['nome']); ?></a>
+    <span class="breadcrumbs-separator">/</span>
+    <a href="<?= site_url('admin/spots/' . $spot['id'] . '/servicos'); ?>">Serviços</a>
+    <span class="breadcrumbs-separator">/</span>
+    <span class="breadcrumbs-current"><?= $servico ? 'Editar' : 'Novo'; ?></span>
+</div>
+
 <div style="max-width:900px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
     <h1><?= $servico ? 'Editar serviço' : 'Novo serviço'; ?> - <?= esc($spot['nome']); ?></h1>
 

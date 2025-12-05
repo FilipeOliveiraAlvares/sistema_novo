@@ -1,5 +1,13 @@
 <?= $this->include('admin/layout/header') ?>
 
+<div class="breadcrumbs">
+    <a href="<?= site_url('admin/spots'); ?>">Spots</a>
+    <span class="breadcrumbs-separator">/</span>
+    <a href="<?= site_url('admin/spots/edit/' . $spot['id']); ?>"><?= esc($spot['nome']); ?></a>
+    <span class="breadcrumbs-separator">/</span>
+    <span class="breadcrumbs-current">Serviços</span>
+</div>
+
 <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);max-width:960px;margin:0 auto;">
     <h1>Serviços de <?= esc($spot['nome']); ?></h1>
 
@@ -17,7 +25,11 @@
     </p>
 
     <?php if (session()->getFlashdata('message')): ?>
-        <p><?= esc(session()->getFlashdata('message')); ?></p>
+        <div data-flash-message data-flash-type="success" style="display: none;"><?= esc(session()->getFlashdata('message')); ?></div>
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')): ?>
+        <div data-flash-message data-flash-type="error" style="display: none;"><?= esc(session()->getFlashdata('error')); ?></div>
     <?php endif; ?>
 
     <table>

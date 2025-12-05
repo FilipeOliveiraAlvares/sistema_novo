@@ -3,6 +3,7 @@
 /writable/logs/
 /writable/session/
 /writable/uploads/
+/public/uploads/
 /.env
 .DS_Store
 Thumbs.db

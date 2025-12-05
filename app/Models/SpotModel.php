@@ -68,7 +68,7 @@ class SpotModel extends Model
 
     protected $validationRules = [
         'nome' => 'required|min_length[3]|max_length[255]',
-        'slug' => 'required|min_length[3]|max_length[255]',
+        'slug' => 'required|min_length[3]|max_length[255]|is_unique[spots.slug,id,{id}]',
     ];
 
     protected $validationMessages = [];
