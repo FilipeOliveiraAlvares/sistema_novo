@@ -151,6 +151,9 @@ class SpotProdutos extends BaseController
 
         $imagens = $imagensAtuais;
         $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        
+        // Primeira passagem: valida todos os arquivos ANTES de mover qualquer um
+        $arquivosValidos = [];
         for ($i = 1; $i <= 3; $i++) {
             $file = $this->request->getFile('imagem' . $i);
             if ($file && $file->isValid() && ! $file->hasMoved()) {
@@ -165,14 +168,21 @@ class SpotProdutos extends BaseController
                     return redirect()->back()->withInput()->with('errors', ['Imagem ' . $i . ' muito grande. O tamanho máximo é 5MB.']);
                 }
 
-                $uploadDir = FCPATH . 'uploads/produtos';
-                if (! is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0775, true);
-                }
-                $newName = $file->getRandomName();
-                $file->move($uploadDir, $newName);
-                $imagens[$i - 1] = 'uploads/produtos/' . $newName;
+                // Armazena o arquivo válido para mover depois
+                $arquivosValidos[$i] = $file;
             }
+        }
+
+        // Segunda passagem: move apenas os arquivos que passaram na validação
+        $uploadDir = FCPATH . 'uploads/produtos';
+        if (! empty($arquivosValidos) && ! is_dir($uploadDir)) {
+            mkdir($uploadDir, 0775, true);
+        }
+
+        foreach ($arquivosValidos as $i => $file) {
+            $newName = $file->getRandomName();
+            $file->move($uploadDir, $newName);
+            $imagens[$i - 1] = 'uploads/produtos/' . $newName;
         }
         // remove vazios e reorganiza índices
         $imagens = array_values(array_filter($imagens));
