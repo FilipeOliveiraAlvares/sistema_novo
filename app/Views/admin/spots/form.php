@@ -46,7 +46,8 @@
                 <select name="vendedor_id" id="vendedor_id" style="width: 100%; padding: 8px 10px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box;">
                     <option value="">-- Sem vendedor atribuído --</option>
                     <?php foreach ($vendedores as $vendedor): ?>
-                        <option value="<?= esc($vendedor['id']); ?>" <?= old('vendedor_id', $spot['vendedor_id'] ?? '') == $vendedor['id'] ? 'selected' : ''; ?>>
+                        <?php $vendedorIdAtual = (isset($spot) && isset($spot['vendedor_id'])) ? $spot['vendedor_id'] : ''; ?>
+                        <option value="<?= esc($vendedor['id']); ?>" <?= old('vendedor_id', $vendedorIdAtual) == $vendedor['id'] ? 'selected' : ''; ?>>
                             <?= esc($vendedor['nome']); ?> (<?= esc($vendedor['email']); ?>)
                         </option>
                     <?php endforeach; ?>
@@ -81,7 +82,8 @@
                     <option value="">-- Selecione um ramo --</option>
                     <?php if (isset($ramos) && ! empty($ramos)): ?>
                         <?php foreach ($ramos as $ramo): ?>
-                            <option value="<?= esc($ramo['id']); ?>" <?= old('ramo_id', $spot['ramo_id'] ?? '') == $ramo['id'] ? 'selected' : ''; ?>>
+                            <?php $ramoIdAtual = (isset($spot) && isset($spot['ramo_id'])) ? $spot['ramo_id'] : ''; ?>
+                            <option value="<?= esc($ramo['id']); ?>" <?= old('ramo_id', $ramoIdAtual) == $ramo['id'] ? 'selected' : ''; ?>>
                                 <?= esc($ramo['nome']); ?>
                             </option>
                         <?php endforeach; ?>
@@ -109,7 +111,8 @@
                         <?php foreach ($cidadesPorUf as $uf => $cidadesUf): ?>
                             <optgroup label="<?= esc($uf); ?>">
                                 <?php foreach ($cidadesUf as $cidade): ?>
-                                    <option value="<?= esc($cidade['id']); ?>" <?= old('cidade_id', $spot['cidade_id'] ?? '') == $cidade['id'] ? 'selected' : ''; ?>>
+                                    <?php $cidadeIdAtual = (isset($spot) && isset($spot['cidade_id'])) ? $spot['cidade_id'] : ''; ?>
+                                    <option value="<?= esc($cidade['id']); ?>" <?= old('cidade_id', $cidadeIdAtual) == $cidade['id'] ? 'selected' : ''; ?>>
                                         <?= esc($cidade['nome']); ?>
                                     </option>
                                 <?php endforeach; ?>

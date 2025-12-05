@@ -279,6 +279,7 @@ class Spot extends BaseController
 
         $data = [
             'spot'          => $spot,
+            'cidades'       => $cidades,
             'cidade_spot'  => $cidadeSpot,
             'ramo_spot'     => $ramoSpot,
             'produtos'      => $produtos,
