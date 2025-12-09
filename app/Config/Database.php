@@ -24,32 +24,7 @@ class Database extends Config
      *
      * @var array<string, mixed>
      */
-    public array $default = [
-        'DSN'          => env('database.default.DSN', ''),
-        'hostname'     => env('database.default.hostname', 'localhost'),
-        'username'     => env('database.default.username', 'root'),
-        'password'     => env('database.default.password', ''),
-        'database'     => env('database.default.database', 'goodex_google'),
-        'DBDriver'     => env('database.default.DBDriver', 'MySQLi'),
-        'DBPrefix'     => env('database.default.DBPrefix', ''),
-        'pConnect'     => env('database.default.pConnect', false),
-        'DBDebug'      => env('database.default.DBDebug', true),
-        'charset'      => env('database.default.charset', 'utf8mb4'),
-        'DBCollat'     => env('database.default.DBCollat', 'utf8mb4_unicode_ci'),
-        'swapPre'      => env('database.default.swapPre', ''),
-        'encrypt'      => env('database.default.encrypt', false),
-        'compress'     => env('database.default.compress', false),
-        'strictOn'     => env('database.default.strictOn', false),
-        'failover'     => [],
-        'port'         => env('database.default.port', 3306),
-        'numberNative' => env('database.default.numberNative', false),
-        'foundRows'    => env('database.default.foundRows', false),
-        'dateFormat'   => [
-            'date'     => 'Y-m-d',
-            'datetime' => 'Y-m-d H:i:s',
-            'time'     => 'H:i:s',
-        ],
-    ];
+    public array $default = [];
 
     //    /**
     //     * Sample database connection for SQLite3.
@@ -192,6 +167,34 @@ class Database extends Config
     public function __construct()
     {
         parent::__construct();
+
+        // Initialize default database connection from environment variables
+        $this->default = [
+            'DSN'          => env('database.default.DSN', ''),
+            'hostname'     => env('database.default.hostname', 'localhost'),
+            'username'     => env('database.default.username', 'root'),
+            'password'     => env('database.default.password', ''),
+            'database'     => env('database.default.database', 'goodex_google'),
+            'DBDriver'     => env('database.default.DBDriver', 'MySQLi'),
+            'DBPrefix'     => env('database.default.DBPrefix', ''),
+            'pConnect'     => env('database.default.pConnect', false),
+            'DBDebug'      => env('database.default.DBDebug', true),
+            'charset'      => env('database.default.charset', 'utf8mb4'),
+            'DBCollat'     => env('database.default.DBCollat', 'utf8mb4_unicode_ci'),
+            'swapPre'      => env('database.default.swapPre', ''),
+            'encrypt'      => env('database.default.encrypt', false),
+            'compress'     => env('database.default.compress', false),
+            'strictOn'     => env('database.default.strictOn', false),
+            'failover'     => [],
+            'port'         => env('database.default.port', 3306),
+            'numberNative' => env('database.default.numberNative', false),
+            'foundRows'    => env('database.default.foundRows', false),
+            'dateFormat'   => [
+                'date'     => 'Y-m-d',
+                'datetime' => 'Y-m-d H:i:s',
+                'time'     => 'H:i:s',
+            ],
+        ];
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that
