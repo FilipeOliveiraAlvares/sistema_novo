@@ -132,6 +132,7 @@ class Spots extends BaseController
 
     public function delete(int $id)
     {
+        $user = $this->getCurrentUser();
         $spot = $this->spotModel->find($id);
 
         if (! $spot) {
@@ -142,7 +143,14 @@ class Spots extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Spot não encontrado');
         }
 
+        // Soft delete: marca o registro como deletado (não remove fisicamente)
         $this->spotModel->delete($id);
+
+        // Log da ação
+        $userId = $user ? $user['id'] : 0;
+        $userEmail = $user ? $user['email'] : 'desconhecido';
+        $ipAddress = $this->request->getIPAddress();
+        log_message('warning', "Spot deletado (soft delete). Spot ID: {$id}, Nome: {$spot['nome']}, User ID: {$userId}, Email: {$userEmail}, IP: {$ipAddress}");
 
         return redirect()->to(site_url('admin/spots'))->with('message', 'Spot removido com sucesso.');
     }

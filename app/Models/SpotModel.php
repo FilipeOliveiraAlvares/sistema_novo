@@ -11,7 +11,8 @@ class SpotModel extends Model
     protected $useAutoIncrement = true;
 
     protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
+    protected $useSoftDeletes   = true;
+    protected $deletedField     = 'deleted_at';
 
     protected $allowedFields    = [
         'vendedor_id',
@@ -73,6 +74,21 @@ class SpotModel extends Model
 
     protected $validationMessages = [];
     protected $skipValidation     = false;
+
+    /**
+     * Restaura um spot que foi deletado (soft delete).
+     * 
+     * @param int $id ID do spot a ser restaurado
+     * @return bool True se restaurado com sucesso, false caso contrário
+     */
+    public function restore(int $id): bool
+    {
+        $builder = $this->builder();
+        $builder->where($this->primaryKey, $id)
+            ->where($this->deletedField . ' IS NOT NULL');
+
+        return $builder->update([$this->deletedField => null]);
+    }
 }
 
 

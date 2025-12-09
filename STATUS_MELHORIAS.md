@@ -112,16 +112,19 @@
 
 ### 🟢 **Prioridade Baixa** (MELHORIAS)
 
-#### ❌ 3. Soft Deletes para Spots
-- **Status**: ❌ **NÃO IMPLEMENTADO**
-- **O que fazer**: Implementar soft deletes para não perder dados ao excluir spots
-- **Onde implementar**: `app/Models/SpotModel.php`
-- **Mudanças necessárias**:
-```php
-protected $useSoftDeletes = true;
-protected $deletedField = 'deleted_at';
-```
-- **Observação**: Requer alteração no banco de dados (adicionar coluna `deleted_at`)
+#### ✅ 3. Soft Deletes para Spots
+- **Status**: ✅ **IMPLEMENTADO**
+- **Arquivos**: 
+  - `app/Models/SpotModel.php` (habilitado soft deletes)
+  - `app/Controllers/Admin/Spots.php` (logging na exclusão)
+  - `adicionar_soft_deletes_spots.sql` (script SQL)
+- **Detalhes**: 
+  - Soft deletes habilitado no model (`useSoftDeletes = true`, `deletedField = 'deleted_at'`)
+  - Registros não são fisicamente deletados, apenas marcados com data/hora em `deleted_at`
+  - Logging implementado na exclusão (nível `warning`)
+  - Método `restore()` adicionado ao model para restaurar spots deletados
+  - Script SQL criado para adicionar coluna `deleted_at` e índice
+- **Observação**: Execute o script SQL `adicionar_soft_deletes_spots.sql` no banco de dados antes de usar
 
 #### ✅ 4. Transações em Operações Críticas
 - **Status**: ✅ **IMPLEMENTADO**
@@ -164,15 +167,15 @@ protected function saveSpot(?int $id = null)
 
 ## 📊 **RESUMO DO PROGRESSO**
 
-### ✅ **Implementado**: 11 de 13 itens (84.6%)
+### ✅ **Implementado**: 12 de 13 itens (92.3%)
 - ✅ **Prioridade Alta**: 4 de 4 (100%) - **TUDO FEITO!**
 - ✅ **Prioridade Média**: 5 de 5 (100%) - **TUDO FEITO!** (incluindo CPF/CNPJ)
-- ✅ **Prioridade Baixa**: 2 de 4 (50%) - Transações implementadas
+- ✅ **Prioridade Baixa**: 3 de 4 (75%) - Transações e Soft Deletes implementados
 
-### ❌ **Pendente**: 2 de 13 itens (15.4%)
+### ❌ **Pendente**: 1 de 13 itens (7.7%)
 - ❌ **Prioridade Alta**: 0 de 4 (0%) - **Tudo feito!**
 - ❌ **Prioridade Média**: 0 de 5 (0%) - **Tudo feito!**
-- ❌ **Prioridade Baixa**: 2 de 4 (50%) - Soft deletes e PHPDoc
+- ❌ **Prioridade Baixa**: 1 de 4 (25%) - PHPDoc
 
 ---
 
@@ -207,9 +210,8 @@ O sistema está **pronto para produção** com:
 - ✅ Validações robustas (URLs, dimensões, slugs únicos, CPF/CNPJ)
 - ✅ Integridade de dados (transações em operações críticas)
 
-**Progresso**: 84.6% das melhorias implementadas (11 de 13 itens)
+**Progresso**: 92.3% das melhorias implementadas (12 de 13 itens)
 
 **Próximos passos opcionais**: 
-- Soft deletes para spots (requer alteração no banco)
 - Melhorar documentação PHPDoc (melhoria contínua)
 
